@@ -2,5 +2,7 @@
 name = "as_num"
 version = "0.1.0"
 authors = ["philipp <philipp>"]
+description = "Checked conversions between Rust's numeric types."
+license = "MIT/Apache-2.0"
 
 [dependencies]
