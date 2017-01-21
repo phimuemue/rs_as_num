@@ -1,0 +1,6 @@
+[package]
+name = "as_num"
+version = "0.1.0"
+authors = ["philipp <philipp>"]
+
+[dependencies]
