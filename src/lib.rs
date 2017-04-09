@@ -12,7 +12,7 @@
 //! This module enables you to write the following:
 //!
 //! ```
-//! use as_num::TAsNum; // TAsNum is the trait enabling the conversions
+//! use as_num::AsNum; // AsNum is the trait enabling the conversions
 //! fn return_u32() -> u32 {
 //!     42
 //! }
@@ -47,12 +47,12 @@ use std::fmt::Debug;
 type LargestSignedType = i64;
 type LargestUnsignedType = u64;
 
-pub trait TSignedInt : Sized + Copy {
+pub trait SignedInt : Sized + Copy {
     fn min() -> LargestSignedType;
     fn max() -> LargestSignedType;
 }
 
-pub trait TUnsignedInt : Sized + Copy {
+pub trait UnsignedInt : Sized + Copy {
     fn min() -> LargestUnsignedType;
     fn max() -> LargestUnsignedType;
 }
@@ -74,36 +74,36 @@ macro_rules! impl_min_max {
     };
 }
 
-impl_min_max!(TSignedInt, LargestSignedType, i8, i16, i32, i64, isize,);
-impl_min_max!(TUnsignedInt, LargestUnsignedType, u8, u16, u32, u64, usize,);
+impl_min_max!(SignedInt, LargestSignedType, i8, i16, i32, i64, isize,);
+impl_min_max!(UnsignedInt, LargestUnsignedType, u8, u16, u32, u64, usize,);
 
-pub trait TAsNumInternal<Dest> : Copy {
+pub trait AsNumInternal<Dest> : Copy {
     fn is_safely_convertible(self) -> bool;
     fn as_num_internal(self) -> Dest;
 }
 
-pub trait TAsNum {
+pub trait AsNum {
     fn as_num<Dest>(self) -> Dest
-        where Self: TAsNumInternal<Dest>,
-              Dest: TAsNumInternal<Self>,
+        where Self: AsNumInternal<Dest>,
+              Dest: AsNumInternal<Self>,
               Dest: Debug;
     fn checked_as_num<Dest>(self) -> Option<Dest>
-        where Self: TAsNumInternal<Dest>,
-              Dest: TAsNumInternal<Self>,
+        where Self: AsNumInternal<Dest>,
+              Dest: AsNumInternal<Self>,
               Dest: Debug;
     fn assert_convertible_back<Dest>(self)
-        where Self: TAsNumInternal<Dest>,
-              Dest: TAsNumInternal<Self>,
+        where Self: AsNumInternal<Dest>,
+              Dest: AsNumInternal<Self>,
               Dest: Debug;
 }
 
 macro_rules! impl_TAsNum {
     () => {};
     ($t: ident, $($ts: ident,)*) => {
-        impl TAsNum for $t {
+        impl AsNum for $t {
             fn assert_convertible_back<Dest>(self)
-                where Self: TAsNumInternal<Dest>,
-                      Dest: TAsNumInternal<Self>,
+                where Self: AsNumInternal<Dest>,
+                      Dest: AsNumInternal<Self>,
                       Dest: Debug,
             {
                 let dst : Dest = self.as_num_internal();
@@ -111,8 +111,8 @@ macro_rules! impl_TAsNum {
                 debug_assert!(self==src, "{:?} {:?} was converted to {:?}, whose back-conversion yields {:?}", self, stringify!($t), dst, src);
             }
             fn as_num<Dest>(self) -> Dest
-                where Self: TAsNumInternal<Dest>,
-                      Dest: TAsNumInternal<Self>,
+                where Self: AsNumInternal<Dest>,
+                      Dest: AsNumInternal<Self>,
                       Dest: Debug,
             {
                 debug_assert!(self.is_safely_convertible(), "{} not safely convertible", self);
@@ -120,8 +120,8 @@ macro_rules! impl_TAsNum {
                 self.as_num_internal()
             }
             fn checked_as_num<Dest>(self) -> Option<Dest>
-                where Self: TAsNumInternal<Dest>,
-                      Dest: TAsNumInternal<Self>,
+                where Self: AsNumInternal<Dest>,
+                      Dest: AsNumInternal<Self>,
                       Dest: Debug,
             {
                 if self.is_safely_convertible() {
@@ -143,7 +143,7 @@ impl_TAsNum!(
 
 macro_rules! impl_signed_to_signed_internal {
     ($src: ident, $dest: ident) => {
-        impl TAsNumInternal<$dest> for $src {
+        impl AsNumInternal<$dest> for $src {
             fn is_safely_convertible(self) -> bool {
                 mem::size_of::<$src>() <= mem::size_of::<$dest>()
                 || {
@@ -170,7 +170,7 @@ macro_rules! impl_signed_to_signed {
 
 macro_rules! impl_signed_to_unsigned_internal {
     ($src: ident, $dest: ident) => {
-        impl TAsNumInternal<$dest> for $src {
+        impl AsNumInternal<$dest> for $src {
             fn is_safely_convertible(self) -> bool {
                 0<=self && self as LargestUnsignedType <= $dest::max()
             }
@@ -192,7 +192,7 @@ macro_rules! impl_signed_to_unsigned {
 
 macro_rules! impl_unsigned_to_signed_internal {
     ($src: ident, $dest: ident) => {
-        impl TAsNumInternal<$dest> for $src {
+        impl AsNumInternal<$dest> for $src {
             fn is_safely_convertible(self) -> bool {
                 self as LargestSignedType <= $dest::max()
             }
@@ -214,7 +214,7 @@ macro_rules! impl_unsigned_to_signed {
 
 macro_rules! impl_unsigned_to_unsigned_internal {
     ($src: ident, $dest: ident) => {
-        impl TAsNumInternal<$dest> for $src {
+        impl AsNumInternal<$dest> for $src {
             fn is_safely_convertible(self) -> bool {
                 mem::size_of::<$src>() <= mem::size_of::<$dest>()
                     || self as LargestUnsignedType <= $dest::max()
@@ -258,7 +258,7 @@ impl_integral_conversions!(
 macro_rules! impl_integral_to_float_internal {
     ($flt: ident,) => {};
     ($flt: ident, $int: ident, $($ints: ident,)*) => {
-        impl TAsNumInternal<$flt> for $int {
+        impl AsNumInternal<$flt> for $int {
             fn is_safely_convertible(self) -> bool {
                 true // assume convertability until we encounter counter example in practice
             }
@@ -266,7 +266,7 @@ macro_rules! impl_integral_to_float_internal {
                 self as $flt
             }
         }
-        impl TAsNumInternal<$int> for $flt {
+        impl AsNumInternal<$int> for $flt {
             fn is_safely_convertible(self) -> bool {
                 let dst : $int = self.as_num_internal();
                 let src : Self = dst.as_num_internal();
@@ -293,7 +293,7 @@ impl_integral_to_float!(f64);
 type LargestFloatType = f64;
 macro_rules! impl_float_to_float_internal {
     ($src: ident, $dest: ident) => {
-        impl TAsNumInternal<$dest> for $src {
+        impl AsNumInternal<$dest> for $src {
             fn is_safely_convertible(self) -> bool {
                 mem::size_of::<$src>() <= mem::size_of::<$dest>() 
                 || {
