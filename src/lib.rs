@@ -1,15 +1,7 @@
 //! This module implements a very opinionated approach to converting numbers.
 //!
-//! Imagine you have a function `return_u32`, and you would like to pass its return value into some
-//! other function take_i8:
-//!
-//! ```
-//! fn return_u32() -> u32 {
-//!     257
-//! }
-//! fn take_i8(i: i8) {
-//! }
-//! ```
+//! Imagine you have a function `return_u32` returning an `u32`, and you would like to pass its return value into some
+//! other function `take_i8`, taking an `i8`:
 //!
 //! Then, the compiler (correctly) complains as soon as you write `take_i8(return_u32())`.
 //! I came into those situations frequently, so I simply changed it to 
@@ -21,6 +13,11 @@
 //!
 //! ```
 //! use as_num::TAsNum; // TAsNum is the trait enabling the conversions
+//! fn return_u32() -> u32 {
+//!     42
+//! }
+//! fn take_i8(_i: i8) {
+//! }
 //! take_i8(return_u32().as_num())
 //! ```
 //!
