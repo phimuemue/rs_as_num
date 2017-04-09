@@ -82,7 +82,7 @@ pub trait TAsNumInternal<Dest> : Copy {
     fn as_num_internal(self) -> Dest;
 }
 
-pub trait TAsNum : Copy {
+pub trait TAsNum {
     fn as_num<Dest>(self) -> Dest
         where Self: TAsNumInternal<Dest>,
               Dest: TAsNumInternal<Self>,
