@@ -1,9 +1,10 @@
 [package]
 name = "as_num"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["philipp <philipp>"]
 description = "Checked conversions between Rust's numeric types."
 license = "MIT/Apache-2.0"
 repository = "https://github.com/phimuemue/rs_as_num"
+documentation = "https://docs.rs/as_num/as_num"
 
 [dependencies]
