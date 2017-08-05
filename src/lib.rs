@@ -149,7 +149,7 @@ macro_rules! impl_signed_to_signed_internal {
                 || {
                     debug_assert!(mem::size_of::<Self>() <= mem::size_of::<LargestSignedType>());
                     let n = self as LargestSignedType;
-                    $dest::min() <= n && n <= $dest::max()
+                    <$dest as SignedInt>::min() <= n && n <= <$dest as SignedInt>::max()
                 }
             }
             fn as_num_internal(self) -> $dest {
@@ -172,7 +172,7 @@ macro_rules! impl_signed_to_unsigned_internal {
     ($src: ident, $dest: ident) => {
         impl AsNumInternal<$dest> for $src {
             fn is_safely_convertible(self) -> bool {
-                0<=self && self as LargestUnsignedType <= $dest::max()
+                0<=self && self as LargestUnsignedType <= <$dest as UnsignedInt>::max()
             }
             fn as_num_internal(self) -> $dest {
                 self as $dest
@@ -194,7 +194,7 @@ macro_rules! impl_unsigned_to_signed_internal {
     ($src: ident, $dest: ident) => {
         impl AsNumInternal<$dest> for $src {
             fn is_safely_convertible(self) -> bool {
-                self as LargestSignedType <= $dest::max()
+                self as LargestSignedType <= <$dest as SignedInt>::max()
             }
             fn as_num_internal(self) -> $dest {
                 self as $dest
@@ -217,7 +217,7 @@ macro_rules! impl_unsigned_to_unsigned_internal {
         impl AsNumInternal<$dest> for $src {
             fn is_safely_convertible(self) -> bool {
                 mem::size_of::<$src>() <= mem::size_of::<$dest>()
-                    || self as LargestUnsignedType <= $dest::max()
+                    || self as LargestUnsignedType <= <$dest as UnsignedInt>::max()
             }
             fn as_num_internal(self) -> $dest {
                 self as $dest
