@@ -43,9 +43,8 @@ use std::fmt::Debug;
 
 // heavily inspired by http://rust-num.github.io/num/src/num_traits/cast.rs.html
 
-// TODO rust i128/u128
-type LargestSignedType = i64;
-type LargestUnsignedType = u64;
+type LargestSignedType = i128;
+type LargestUnsignedType = u128;
 
 pub trait SignedInt : Sized + Copy {
     #[inline(always)]
@@ -80,8 +79,8 @@ macro_rules! impl_min_max {
     };
 }
 
-impl_min_max!(SignedInt, LargestSignedType, i8, i16, i32, i64, isize,);
-impl_min_max!(UnsignedInt, LargestUnsignedType, u8, u16, u32, u64, usize,);
+impl_min_max!(SignedInt, LargestSignedType, i8, i16, i32, i64, i128, isize,);
+impl_min_max!(UnsignedInt, LargestUnsignedType, u8, u16, u32, u64, u128, usize,);
 
 pub trait AsNumInternal<Dest> : Copy {
     #[inline(always)]
@@ -150,8 +149,8 @@ macro_rules! impl_TAsNum {
     };
 }
 impl_TAsNum!(
-    i8, i16, i32, i64, isize,
-    u8, u16, u32, u64, usize,
+    i8, i16, i32, i64, i128, isize,
+    u8, u16, u32, u64, u128, usize,
     f32, f64,
 );
 
@@ -273,8 +272,8 @@ macro_rules! impl_integral_conversions {
 }
 
 impl_integral_conversions!(
-    (i8, i16, i32, i64, isize,),
-    (u8, u16, u32, u64, usize,)
+    (i8, i16, i32, i64, i128, isize,),
+    (u8, u16, u32, u64, u128, usize,)
 );
 
 macro_rules! impl_integral_to_float_internal {
@@ -308,8 +307,8 @@ macro_rules! impl_integral_to_float_internal {
 macro_rules! impl_integral_to_float {
     ($flt: ident) => {
         impl_integral_to_float_internal!($flt,
-            i8, i16, i32, i64, isize,
-            u8, u16, u32, u64, usize,
+            i8, i16, i32, i64, i128, isize,
+            u8, u16, u32, u64, u128, usize,
         );
     };
 }
