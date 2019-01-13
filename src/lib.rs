@@ -213,7 +213,7 @@ macro_rules! impl_unsigned_to_signed_internal {
         impl AsNumInternal<$dest> for $src {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
-                self as LargestSignedType <= <$dest as SignedInt>::max()
+                self as LargestUnsignedType <= <$dest as SignedInt>::max() as LargestUnsignedType
             }
             #[inline(always)]
             fn as_num_internal(self) -> $dest {
@@ -362,5 +362,12 @@ mod tests {
         assert_eq!(4i32, 4usize.as_num());
         assert_eq!(256isize.checked_as_num::<u8>(), None);
         assert_eq!(4.3.checked_as_num::<isize>(), None);
+    }
+
+    #[test]
+    fn test_ulargest_to_ilargest() {
+        assert_eq!(
+            ((<LargestSignedType as SignedInt>::max() as LargestUnsignedType)+1).checked_as_num::<LargestSignedType>(), None
+        )
     }
 }
