@@ -368,6 +368,15 @@ mod tests {
     fn test_ulargest_to_ilargest() {
         assert_eq!(
             ((<LargestSignedType as SignedInt>::max() as LargestUnsignedType)+1).checked_as_num::<LargestSignedType>(), None
-        )
+        );
+        assert_eq!(
+            (<LargestSignedType as SignedInt>::max() as LargestUnsignedType).checked_as_num::<LargestSignedType>(), Some(<LargestSignedType as SignedInt>::max())
+        );
+        assert_eq!(
+            (<LargestSignedType as SignedInt>::max() as LargestUnsignedType).checked_as_num::<LargestSignedType>(), Some(<LargestSignedType as SignedInt>::max())
+        );
+        assert_eq!(
+            <LargestSignedType as SignedInt>::min().checked_as_num::<LargestUnsignedType>(), None
+        );
     }
 }
