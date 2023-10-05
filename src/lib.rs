@@ -30,7 +30,7 @@
 //! In addition to `as_num`, it offers a method `checked_as_num`, returning an `Option`.
 //!
 //! This module implements conversion for any combination of the following types:
-//! `i8`, `i16`, `i32`, `i64`, `isize`, `u8`, `u16`, `u32`, `u64`, `usize`, `f32`, `f64`.
+//! `i8`, `i16`, `i32`, `i64`, `isize`, `i128`, `u8`, `u16`, `u32`, `u64`, `usize`, `u128`, `f32`, `f64`.
 //!
 //! The function `as_num` `debug_assert`s that the destination value is convertible back to the
 //! exact same source value.
@@ -39,19 +39,15 @@
 //! with `as_num` if the source is already been rounded to some integral number.
 
 #![no_std]
-#![feature(const_trait_impl)]
 
 use core::mem;
 use core::fmt::Debug;
 
-
 // heavily inspired by http://rust-num.github.io/num/src/num_traits/cast.rs.html
 
-// TODO rust i128/u128
 type LargestSignedType = i128;
 type LargestUnsignedType = u128;
 
-#[const_trait]
 pub trait SignedInt: Sized + Copy {
     #[inline(always)]
     fn min() -> LargestSignedType;
@@ -59,7 +55,6 @@ pub trait SignedInt: Sized + Copy {
     fn max() -> LargestSignedType;
 }
 
-#[const_trait]
 pub trait UnsignedInt: Sized + Copy {
     #[inline(always)]
     fn min() -> LargestUnsignedType;
@@ -70,7 +65,7 @@ pub trait UnsignedInt: Sized + Copy {
 macro_rules! impl_min_max {
     ($num_trait: ident, $largest_type_same_signedness: ty,) => {};
     ($num_trait: ident, $largest_type_same_signedness: ty, $t: ident, $($ts: ident,)*) => {
-        impl const $num_trait for $t {
+        impl $num_trait for $t {
             #[inline(always)]
             fn min() -> $largest_type_same_signedness {
                 use core::$t;
@@ -89,7 +84,6 @@ macro_rules! impl_min_max {
 impl_min_max!(SignedInt, LargestSignedType, i8, i16, i32, i64, isize, i128,);
 impl_min_max!(UnsignedInt, LargestUnsignedType, u8, u16, u32, u64, usize, u128,);
 
-#[const_trait]
 pub trait AsNumInternal<Dest>: Copy {
     #[inline(always)]
     fn is_safely_convertible(self) -> bool;
@@ -97,7 +91,6 @@ pub trait AsNumInternal<Dest>: Copy {
     fn as_num_internal(self) -> Dest;
 }
 
-#[const_trait]
 pub trait AsNum {
     #[inline(always)]
     fn as_num<Dest>(self) -> Dest
@@ -119,31 +112,31 @@ pub trait AsNum {
 macro_rules! impl_TAsNum {
     () => {};
     ($t: ident, $($ts: ident,)*) => {
-        impl const AsNum for $t {
+        impl AsNum for $t {
             #[inline(always)]
             fn assert_convertible_back<Dest>(self)
-                where Self: ~const AsNumInternal<Dest>,
-                      Dest: ~const AsNumInternal<Self>,
+                where Self: AsNumInternal<Dest>,
+                      Dest: AsNumInternal<Self>,
                       Dest: Debug,
             {
                 let dst : Dest = self.as_num_internal();
                 let _src : Self = dst.as_num_internal();
-                //debug_assert!(self==src, "{:?} {:?} was converted to {:?}, whose back-conversion yields {:?}", self, stringify!($t), dst, src);
+                debug_assert!(self==src, "{:?} {:?} was converted to {:?}, whose back-conversion yields {:?}", self, stringify!($t), dst, src);
             }
             #[inline(always)]
             fn as_num<Dest>(self) -> Dest
-                where Self: ~const AsNumInternal<Dest>,
-                      Dest: ~const AsNumInternal<Self>,
+                where Self: AsNumInternal<Dest>,
+                      Dest: AsNumInternal<Self>,
                       Dest: Debug,
             {
-                //debug_assert!(self.is_safely_convertible(), "{} not safely convertible", self);
+                debug_assert!(self.is_safely_convertible(), "{} not safely convertible", self);
                 self.assert_convertible_back::<Dest>();
                 self.as_num_internal()
             }
             #[inline(always)]
             fn checked_as_num<Dest>(self) -> Option<Dest>
-                where Self: ~const AsNumInternal<Dest>,
-                      Dest: ~const AsNumInternal<Self>,
+                where Self: AsNumInternal<Dest>,
+                      Dest: AsNumInternal<Self>,
                       Dest: Debug,
             {
                 if self.is_safely_convertible() {
@@ -165,7 +158,7 @@ impl_TAsNum!(
 
 macro_rules! impl_signed_to_signed_internal {
     ($src: ident, $dest: ident) => {
-        impl const AsNumInternal<$dest> for $src {
+        impl AsNumInternal<$dest> for $src {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 mem::size_of::<$src>() <= mem::size_of::<$dest>()
@@ -194,7 +187,7 @@ macro_rules! impl_signed_to_signed {
 
 macro_rules! impl_signed_to_unsigned_internal {
     ($src: ident, $dest: ident) => {
-        impl const AsNumInternal<$dest> for $src {
+        impl AsNumInternal<$dest> for $src {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 0<=self && self as LargestUnsignedType <= <$dest as UnsignedInt>::max()
@@ -218,7 +211,7 @@ macro_rules! impl_signed_to_unsigned {
 
 macro_rules! impl_unsigned_to_signed_internal {
     ($src: ident, $dest: ident) => {
-        impl const AsNumInternal<$dest> for $src {
+        impl AsNumInternal<$dest> for $src {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 self as LargestUnsignedType <= <$dest as SignedInt>::max() as LargestUnsignedType
@@ -242,7 +235,7 @@ macro_rules! impl_unsigned_to_signed {
 
 macro_rules! impl_unsigned_to_unsigned_internal {
     ($src: ident, $dest: ident) => {
-        impl const AsNumInternal<$dest> for $src {
+        impl AsNumInternal<$dest> for $src {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 mem::size_of::<$src>() <= mem::size_of::<$dest>()
@@ -288,7 +281,7 @@ impl_integral_conversions!(
 macro_rules! impl_integral_to_float_internal {
     ($flt: ident,) => {};
     ($flt: ident, $int: ident, $($ints: ident,)*) => {
-        impl const AsNumInternal<$flt> for $int {
+        impl AsNumInternal<$flt> for $int {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 true // assume convertability until we encounter counter example in practice
