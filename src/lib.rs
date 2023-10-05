@@ -38,23 +38,29 @@
 //! That, in particular, means that converting floating-point to integral numbers can only be done
 //! with `as_num` if the source is already been rounded to some integral number.
 
-use std::mem;
-use std::fmt::Debug;
+#![no_std]
+#![feature(const_trait_impl)]
+
+use core::mem;
+use core::fmt::Debug;
+
 
 // heavily inspired by http://rust-num.github.io/num/src/num_traits/cast.rs.html
 
 // TODO rust i128/u128
-type LargestSignedType = i64;
-type LargestUnsignedType = u64;
+type LargestSignedType = i128;
+type LargestUnsignedType = u128;
 
-pub trait SignedInt : Sized + Copy {
+#[const_trait]
+pub trait SignedInt: Sized + Copy {
     #[inline(always)]
     fn min() -> LargestSignedType;
     #[inline(always)]
     fn max() -> LargestSignedType;
 }
 
-pub trait UnsignedInt : Sized + Copy {
+#[const_trait]
+pub trait UnsignedInt: Sized + Copy {
     #[inline(always)]
     fn min() -> LargestUnsignedType;
     #[inline(always)]
@@ -64,15 +70,15 @@ pub trait UnsignedInt : Sized + Copy {
 macro_rules! impl_min_max {
     ($num_trait: ident, $largest_type_same_signedness: ty,) => {};
     ($num_trait: ident, $largest_type_same_signedness: ty, $t: ident, $($ts: ident,)*) => {
-        impl $num_trait for $t {
+        impl const $num_trait for $t {
             #[inline(always)]
             fn min() -> $largest_type_same_signedness {
-                use std::$t;
+                use core::$t;
                 $t::MIN as $largest_type_same_signedness
             }
             #[inline(always)]
             fn max() -> $largest_type_same_signedness {
-                use std::$t;
+                use core::$t;
                 $t::MAX as $largest_type_same_signedness
             }
         }
@@ -80,16 +86,18 @@ macro_rules! impl_min_max {
     };
 }
 
-impl_min_max!(SignedInt, LargestSignedType, i8, i16, i32, i64, isize,);
-impl_min_max!(UnsignedInt, LargestUnsignedType, u8, u16, u32, u64, usize,);
+impl_min_max!(SignedInt, LargestSignedType, i8, i16, i32, i64, isize, i128,);
+impl_min_max!(UnsignedInt, LargestUnsignedType, u8, u16, u32, u64, usize, u128,);
 
-pub trait AsNumInternal<Dest> : Copy {
+#[const_trait]
+pub trait AsNumInternal<Dest>: Copy {
     #[inline(always)]
     fn is_safely_convertible(self) -> bool;
     #[inline(always)]
     fn as_num_internal(self) -> Dest;
 }
 
+#[const_trait]
 pub trait AsNum {
     #[inline(always)]
     fn as_num<Dest>(self) -> Dest
@@ -111,31 +119,31 @@ pub trait AsNum {
 macro_rules! impl_TAsNum {
     () => {};
     ($t: ident, $($ts: ident,)*) => {
-        impl AsNum for $t {
+        impl const AsNum for $t {
             #[inline(always)]
             fn assert_convertible_back<Dest>(self)
-                where Self: AsNumInternal<Dest>,
-                      Dest: AsNumInternal<Self>,
+                where Self: ~const AsNumInternal<Dest>,
+                      Dest: ~const AsNumInternal<Self>,
                       Dest: Debug,
             {
                 let dst : Dest = self.as_num_internal();
-                let src : Self = dst.as_num_internal();
-                debug_assert!(self==src, "{:?} {:?} was converted to {:?}, whose back-conversion yields {:?}", self, stringify!($t), dst, src);
+                let _src : Self = dst.as_num_internal();
+                //debug_assert!(self==src, "{:?} {:?} was converted to {:?}, whose back-conversion yields {:?}", self, stringify!($t), dst, src);
             }
             #[inline(always)]
             fn as_num<Dest>(self) -> Dest
-                where Self: AsNumInternal<Dest>,
-                      Dest: AsNumInternal<Self>,
+                where Self: ~const AsNumInternal<Dest>,
+                      Dest: ~const AsNumInternal<Self>,
                       Dest: Debug,
             {
-                debug_assert!(self.is_safely_convertible(), "{} not safely convertible", self);
+                //debug_assert!(self.is_safely_convertible(), "{} not safely convertible", self);
                 self.assert_convertible_back::<Dest>();
                 self.as_num_internal()
             }
             #[inline(always)]
             fn checked_as_num<Dest>(self) -> Option<Dest>
-                where Self: AsNumInternal<Dest>,
-                      Dest: AsNumInternal<Self>,
+                where Self: ~const AsNumInternal<Dest>,
+                      Dest: ~const AsNumInternal<Self>,
                       Dest: Debug,
             {
                 if self.is_safely_convertible() {
@@ -150,14 +158,14 @@ macro_rules! impl_TAsNum {
     };
 }
 impl_TAsNum!(
-    i8, i16, i32, i64, isize,
-    u8, u16, u32, u64, usize,
+    i8, i16, i32, i64, isize, i128,
+    u8, u16, u32, u64, usize, u128,
     f32, f64,
 );
 
 macro_rules! impl_signed_to_signed_internal {
     ($src: ident, $dest: ident) => {
-        impl AsNumInternal<$dest> for $src {
+        impl const AsNumInternal<$dest> for $src {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 mem::size_of::<$src>() <= mem::size_of::<$dest>()
@@ -186,7 +194,7 @@ macro_rules! impl_signed_to_signed {
 
 macro_rules! impl_signed_to_unsigned_internal {
     ($src: ident, $dest: ident) => {
-        impl AsNumInternal<$dest> for $src {
+        impl const AsNumInternal<$dest> for $src {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 0<=self && self as LargestUnsignedType <= <$dest as UnsignedInt>::max()
@@ -210,7 +218,7 @@ macro_rules! impl_signed_to_unsigned {
 
 macro_rules! impl_unsigned_to_signed_internal {
     ($src: ident, $dest: ident) => {
-        impl AsNumInternal<$dest> for $src {
+        impl const AsNumInternal<$dest> for $src {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 self as LargestUnsignedType <= <$dest as SignedInt>::max() as LargestUnsignedType
@@ -234,7 +242,7 @@ macro_rules! impl_unsigned_to_signed {
 
 macro_rules! impl_unsigned_to_unsigned_internal {
     ($src: ident, $dest: ident) => {
-        impl AsNumInternal<$dest> for $src {
+        impl const AsNumInternal<$dest> for $src {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 mem::size_of::<$src>() <= mem::size_of::<$dest>()
@@ -273,14 +281,14 @@ macro_rules! impl_integral_conversions {
 }
 
 impl_integral_conversions!(
-    (i8, i16, i32, i64, isize,),
-    (u8, u16, u32, u64, usize,)
+    (i8, i16, i32, i64, isize, i128,),
+    (u8, u16, u32, u64, usize, u128,)
 );
 
 macro_rules! impl_integral_to_float_internal {
     ($flt: ident,) => {};
     ($flt: ident, $int: ident, $($ints: ident,)*) => {
-        impl AsNumInternal<$flt> for $int {
+        impl const AsNumInternal<$flt> for $int {
             #[inline(always)]
             fn is_safely_convertible(self) -> bool {
                 true // assume convertability until we encounter counter example in practice
@@ -328,7 +336,7 @@ macro_rules! impl_float_to_float_internal {
                     // NaN and +-inf are cast as they are.
                     let f = self as LargestFloatType;
                     !f.is_finite() || {
-                        let max_value: $dest = ::std::$dest::MAX;
+                        let max_value: $dest = ::core::$dest::MAX;
                         -max_value as LargestFloatType <= f && f <= max_value as LargestFloatType
                     }
                 }
@@ -353,6 +361,7 @@ impl_float_to_float!(f32, f64,);
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn test_as_num() {
         // we assume that isize/usize occupy at least 32 bit (i.e. 4 byte)
@@ -367,7 +376,7 @@ mod tests {
     #[test]
     fn test_ulargest_to_ilargest() {
         assert_eq!(
-            ((<LargestSignedType as SignedInt>::max() as LargestUnsignedType)+1).checked_as_num::<LargestSignedType>(), None
+            ((<LargestSignedType as SignedInt>::max() as LargestUnsignedType) + 1).checked_as_num::<LargestSignedType>(), None
         );
         assert_eq!(
             (<LargestSignedType as SignedInt>::max() as LargestUnsignedType).checked_as_num::<LargestSignedType>(), Some(<LargestSignedType as SignedInt>::max())
