@@ -120,7 +120,7 @@ macro_rules! impl_TAsNum {
                       Dest: Debug,
             {
                 let dst : Dest = self.as_num_internal();
-                let _src : Self = dst.as_num_internal();
+                let src : Self = dst.as_num_internal();
                 debug_assert!(self==src, "{:?} {:?} was converted to {:?}, whose back-conversion yields {:?}", self, stringify!($t), dst, src);
             }
             #[inline(always)]
