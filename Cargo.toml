@@ -6,5 +6,6 @@ description = "Checked conversions between Rust's numeric types."
 license = "MIT/Apache-2.0"
 repository = "https://github.com/phimuemue/rs_as_num"
 documentation = "https://docs.rs/as_num"
+edition = "2021"
 
 [dependencies]
