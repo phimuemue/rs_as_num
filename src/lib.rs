@@ -47,16 +47,12 @@ type LargestSignedType = i128;
 type LargestUnsignedType = u128;
 
 pub trait SignedInt : Sized + Copy {
-    #[inline(always)]
     fn min() -> LargestSignedType;
-    #[inline(always)]
     fn max() -> LargestSignedType;
 }
 
 pub trait UnsignedInt : Sized + Copy {
-    #[inline(always)]
     fn min() -> LargestUnsignedType;
-    #[inline(always)]
     fn max() -> LargestUnsignedType;
 }
 
@@ -83,24 +79,19 @@ impl_min_max!(SignedInt, LargestSignedType, i8, i16, i32, i64, i128, isize,);
 impl_min_max!(UnsignedInt, LargestUnsignedType, u8, u16, u32, u64, u128, usize,);
 
 pub trait AsNumInternal<Dest> : Copy {
-    #[inline(always)]
     fn is_safely_convertible(self) -> bool;
-    #[inline(always)]
     fn as_num_internal(self) -> Dest;
 }
 
 pub trait AsNum {
-    #[inline(always)]
     fn as_num<Dest>(self) -> Dest
         where Self: AsNumInternal<Dest>,
               Dest: AsNumInternal<Self>,
               Dest: Debug;
-    #[inline(always)]
     fn checked_as_num<Dest>(self) -> Option<Dest>
         where Self: AsNumInternal<Dest>,
               Dest: AsNumInternal<Self>,
               Dest: Debug;
-    #[inline(always)]
     fn assert_convertible_back<Dest>(self)
         where Self: AsNumInternal<Dest>,
               Dest: AsNumInternal<Self>,
