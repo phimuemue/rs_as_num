@@ -38,8 +38,9 @@
 //! That, in particular, means that converting floating-point to integral numbers can only be done
 //! with `as_num` if the source is already been rounded to some integral number.
 
-use std::mem;
-use std::fmt::Debug;
+#![no_std]
+use core::mem;
+use core::fmt::Debug;
 
 // heavily inspired by http://rust-num.github.io/num/src/num_traits/cast.rs.html
 
@@ -66,12 +67,12 @@ macro_rules! impl_min_max {
         impl $num_trait for $t {
             #[inline(always)]
             fn min() -> $largest_type_same_signedness {
-                use std::$t;
+                use core::$t;
                 $t::MIN as $largest_type_same_signedness
             }
             #[inline(always)]
             fn max() -> $largest_type_same_signedness {
-                use std::$t;
+                use core::$t;
                 $t::MAX as $largest_type_same_signedness
             }
         }
@@ -327,7 +328,7 @@ macro_rules! impl_float_to_float_internal {
                     // NaN and +-inf are cast as they are.
                     let f = self as LargestFloatType;
                     !f.is_finite() || {
-                        let max_value: $dest = ::std::$dest::MAX;
+                        let max_value: $dest = ::core::$dest::MAX;
                         -max_value as LargestFloatType <= f && f <= max_value as LargestFloatType
                     }
                 }
